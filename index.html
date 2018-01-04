@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<style>
+
+  body {
+    background-color: #EEE;
+    margin: 30px;
+    font-family: Helvetica;
+    font-style: bold;
+  }
+    
+  .dem {
+    fill: blue;
+    background-color: blue;
+    color: white;
+  }
+
+  .rep {
+    fill: red;
+    background-color: red;
+    color: white;
+  }
+
+  h1 {
+    font-size: 30px;
+  }
+
+  span {
+    margin-top: 20px;
+    font-size: 20px;
+  }
+
+  button {
+    background-color: gray;
+    border: none;
+    color: white;
+    padding: 20px;
+    margin: 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border-radius: 15px;
+  }
+
+  button:hover {
+    background-color: black;
+  }
+
+  .axis path, .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+
+  .axis text {
+    font: 10px sans-serif;
+  }
+
+</style>
+
+<body>
+  <h1 id="text">Voting data US Presidential elections 1976-2016</h1>
+
+  
+  <div>
+    <button onclick="play()">Play</button>
+    <button onclick="stop()">Stop</button>
+    <button onclick="reset()">Reset</button>
+  </div>
+  <span id="date"></span>
+  <br>
+  <svg id="svg" width="100%"height="300px"></svg>
+  <br>
+  <div id="hovertext">How do people vote? </div>
+  <br>
+  <div>
+    <rect class="dem">Democratic candidate</rect>
+    <rect class="rep">Republican candidate</rect>
+  </div>
+  <p>This was made using D3.js and shows how different age groups voted during different elections. Red is for rebublicans and blue is for democrats. It is generally believed that younger voters today are more likely to be democrats then they were 20 years ago.</p>
+  <p>It should be mentioned that age groups have been divided differently at each election, sometimes it has been more similar to previous elections other times it hasn't.</p>
+  <p>Made by Per Jaakonantti.</p>
+  <p>Feel free to reuse data and code.</p>
+  <a href="https://ropercenter.cornell.edu/polls/us-elections/how-groups-voted/">Source for data used.</a>
+<script src="d3.v3.js"></script>
+<script>
+
+  var svg = d3.select("svg");
+
+  var g = svg.append("g");
+
+  var year = 10; // startyear
+  var startyear = 10;
+  var duration = 750;
+  var bufferValue = 40;
+  var demX = 120;
+  var repX = demX+70;
+  var heightStart = 220;
+  var lastElection = 2016;
+  var scaler = 1.5;
+  var groups;
+  var estimatedMaxPercantage = 70;
+
+  if (window.innerWidth > 500) {
+    scaler = 3;
+    demX = 220;
+    repX = demX+70;
+  }
+
+  var xScaleRep = d3.scale.linear().domain([0, estimatedMaxPercantage]).range([0, estimatedMaxPercantage*scaler]);
+  var xScaleDem = d3.scale.linear().domain([estimatedMaxPercantage, 0]).range([-estimatedMaxPercantage*scaler, 0]);
+  var yScale    = d3.scale.ordinal().range([-heightStart+bufferValue*1.5, -bufferValue/4]).domain(['Old','Young']);
+
+  //Define  axis
+  var xAxisRep = d3.svg.axis()
+    .scale(xScaleRep)
+    .orient("bottom")
+    .ticks(3);
+
+  var xAxisDem = d3.svg.axis()
+    .scale(xScaleDem)
+    .orient("bottom")
+    .ticks(3);
+
+  var yAxis = d3.svg.axis()
+    .scale(yScale);
+
+  //Create axis
+  svg.append("g")
+    .attr("transform", "translate("+ repX + "," + (heightStart + bufferValue/2) + ")")
+    .attr("class","axis")
+    .call(xAxisRep);
+
+  svg.append("g")
+    .attr("transform", "translate("+ demX + "," + (heightStart + bufferValue/2) + ")")
+    .attr("class","axis")
+    .call(xAxisDem);
+
+  svg.append("g")
+    .attr("transform", "translate("+ (demX+repX)/2 + "," + (heightStart + bufferValue/2) + ")")
+    .attr("class","axis")
+    .call(yAxis.orient("right"));
+
+  svg.append("g")
+    .attr("transform", "translate("+ (demX+repX)/2 + "," + (heightStart + bufferValue/2) + ")")
+    .attr("class","axis")
+    .call(yAxis.orient("left"));
+
+  var sharedata;
+
+  function change(year) {
+
+    showyear = getYearFromNumber(year);
+
+    d3.json("data.json", function(data) {
+      sharedata = data.results[year].share;
+      groups = data.results[year].groups;
+
+      document.getElementById("date").innerHTML = "Year " + showyear + ": <span class='dem'>" + data.results[year]["dem_can"] + "</span> vs <span class='rep'>" + data.results[year].rep_can + "</span>";
+
+      g.selectAll(".dem")
+        .data(data.results[year].dem)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("class", "dem")
+        .on("mouseover", handleMouseOver)
+        .on("mouseout", handleMouseOut);
+
+      g.selectAll(".rep")
+        .data(data.results[year].rep)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("class", "rep")
+        .on("mouseover", handleMouseOver)
+        .on("mouseout", handleMouseOut);
+
+      bar = svg.selectAll(".dem")
+        .transition()
+        .duration(duration)
+        .attr("x", function(d,i) { return demX-widthFunction(d); })
+        .attr("y", function(d,i) { 
+          return y(i, sharedata); })
+        .attr("width",  function(d) { return widthFunction(d); })
+        .attr("height", function(d,i) {
+          return sharedata[i];
+        });
+
+      bar = svg.selectAll(".rep")
+        .transition()
+        .duration(duration)
+        .attr("x", function(d,i) { return repX; })
+        .attr("y", function(d,i) { 
+          return y(i, sharedata); })
+        .attr("width",  function(d) { return widthFunction(d); })
+        .attr("height", function(d,i) {
+          return sharedata[i];
+        });
+  });}
+
+  d3.select("#range1").on("input", function () {
+    showyear = getYearFunction(d3.select("#range1").property("value"));
+    document.getElementById("date").innerHTML = "Year " + showyear;
+    year = yearToNumberConverter(showyear);
+    change(year);
+  });
+
+  function handleMouseOver(d,i) {
+    document.getElementById("hovertext").innerHTML ="Party share: " + d + " % and share for people aged " + groups[i] + ": " + sharedata[i] + " %";
+  }
+
+  function handleMouseOut() {
+    document.getElementById("hovertext").innerHTML = "How do people vote?";
+  }
+
+  function y(i, sharedata) {
+    sharesum = 0;
+      for (j = i;j>=0;j--) {
+        sharesum += sharedata[j];
+      }
+    return heightStart - sharesum - i*bufferValue/sharedata.length;
+  }
+
+  function widthFunction(value) {
+    return scaler*value;
+  }
+
+  function getYearFunction(number) {
+    return Math.round(number/4)*4;
+  }
+
+  function yearToNumberConverter(year) {
+    return (lastElection-year)/4
+  }
+
+  function getYearFromNumber(number) {
+    return (lastElection-4*number)
+  }
+
+  var myVar;
+
+  function play() {
+    myVar = setInterval(timer ,1500);
+  }
+
+  function stop() {
+    clearInterval(myVar);
+  }
+
+  function timer() {
+    if (year > 0) {
+      year = year-1;
+      change(year);
+    }
+    else {
+      stop();
+    }
+  }
+
+  function reset() {
+    year = startyear;
+    change(startyear);
+  }
+
+  change(startyear);
+
+</script>
+<body>
