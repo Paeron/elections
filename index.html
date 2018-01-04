@@ -74,7 +74,7 @@
   </div>
   <span id="date"></span>
   <br>
-  <svg id="svg" width="100%"height="300px"></svg>
+  <svg id="svg" width="100%"height="500px"></svg>
   <br>
   <div id="hovertext">How do people vote? </div>
   <br>
@@ -103,23 +103,27 @@
   var startyear = 10;
   var duration = 750;
   var bufferValue = 40;
-  var demX = 120;
+  var demX = window.innerWidth/2-70;
   var repX = demX+70;
-  var heightStart = 220;
+  
   var lastElection = 2016;
-  var scaler = 1.5;
+  var scaler = 4;
+  var heightScaler = 4/2.5;
+  var heightStart = 220 * heightScaler;
   var groups;
   var estimatedMaxPercantage = 70;
 
   if (!mobilecheck()) {
-    scaler = 3;
-    demX = 220;
+    scaler = 5;
+    demX = 400;
     repX = demX+70;
+    heightScaler = 2;
+    heightStart = 220 * heightScaler;
   }
 
   var xScaleRep = d3.scale.linear().domain([0, estimatedMaxPercantage]).range([0, estimatedMaxPercantage*scaler]);
   var xScaleDem = d3.scale.linear().domain([estimatedMaxPercantage, 0]).range([-estimatedMaxPercantage*scaler, 0]);
-  var yScale    = d3.scale.ordinal().range([-heightStart+bufferValue*1.5, -bufferValue/4]).domain(['Old','Young']);
+  var yScale    = d3.scale.ordinal().range([(-heightStart+bufferValue*heightScaler*1.5), -bufferValue/4]).domain(['Old','Young']);
 
   //Define  axis
   var xAxisRep = d3.svg.axis()
@@ -192,7 +196,7 @@
           return y(i, sharedata); })
         .attr("width",  function(d) { return widthFunction(d); })
         .attr("height", function(d,i) {
-          return sharedata[i];
+          return heightScaler*sharedata[i];
         });
 
       bar = svg.selectAll(".rep")
@@ -203,7 +207,7 @@
           return y(i, sharedata); })
         .attr("width",  function(d) { return widthFunction(d); })
         .attr("height", function(d,i) {
-          return sharedata[i];
+          return heightScaler*sharedata[i];
         });
   });}
 
@@ -227,7 +231,7 @@
       for (j = i;j>=0;j--) {
         sharesum += sharedata[j];
       }
-    return heightStart - sharesum - i*bufferValue/sharedata.length;
+    return heightStart - heightScaler*sharesum - i*heightScaler*bufferValue/sharedata.length;
   }
 
   function widthFunction(value) {
