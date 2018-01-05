@@ -59,6 +59,20 @@
     font: 10px sans-serif;
   }
 
+  div.tooltip { 
+
+    position: absolute;     
+    text-align: center;     
+    width: 120px;              
+    padding: 2px;       
+    font: 12px sans-serif;    
+    background: #FFA; 
+    border: 0px;    
+    border-radius: 8px;     
+    pointer-events: none;  
+    font-weight: bold;  
+}
+
 </style>
 <title>Paeron - US ELECTIONS</title>
 <script type="text/javascript" src="d3/d3.v3.js"></script>
@@ -86,7 +100,11 @@
   <p>It should be mentioned that age groups have been divided differently at each election, sometimes it has been more similar to previous elections other times it hasn't.</p>
   <p>Made by Per Jaakonantti.</p>
   <p>Feel free to reuse data and code.</p>
-  <a href="https://ropercenter.cornell.edu/polls/us-elections/how-groups-voted/">Source for data used.</a>
+  <p>
+    <a href="https://ropercenter.cornell.edu/polls/us-elections/how-groups-voted/">Source for data used</a>
+    &
+    <a href="https://github.com/Paeron/elections">code on Github.</a>
+  </p>
 <script>
 
   window.mobilecheck = function() {
@@ -160,6 +178,11 @@
     .attr("class","axis")
     .call(yAxis.orient("left"));
 
+  //Tooltip
+  var div = d3.select("body").append("div") 
+    .attr("class", "tooltip")       
+    .style("opacity", 0);
+
   var sharedata;
 
   function change(year) {
@@ -219,11 +242,16 @@
   });
 
   function handleMouseOver(d,i) {
-    document.getElementById("hovertext").innerHTML ="Party share: " + d + " % and share for people aged " + groups[i] + ": " + sharedata[i] + " %";
+    div.html("People aged: " + groups[i] +" represents " + sharedata[i] + " % of all voters, " + d + " % voted for this candidate.")
+      .style("left", (d3.event.pageX + bufferValue/2) + "px")
+      .style("top", (d3.event.pageY - bufferValue/2) + "px")
+      .style("opacity", .9);
+    //document.getElementById("hoverDiv").innerHTML ="Party share: " + d + " % and share for people aged " + groups[i] + ": " + sharedata[i] + " %";
   }
 
   function handleMouseOut() {
-    document.getElementById("hovertext").innerHTML = "How do people vote?";
+    div.style("opacity", 0);
+    //document.getElementById("hoverDiv").innerHTML = "How do people vote?";
   }
 
   function y(i, sharedata) {
